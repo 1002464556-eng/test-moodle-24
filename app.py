@@ -183,11 +183,11 @@ if not district:
 df_lat_dist = df_latest[df_latest['מחוז תקשוב'] == district]
 df_urg_dist = df_urgent[df_urgent['מחוז תקשוב'] == district] if not df_urgent.empty else pd.DataFrame()
 
-# הגדרות רוחב מיוחדות לעמודות של שם המוסד והסמל בכל הטבלאות
+# הגדרות רוחב חכמות לעמודות (נותן יותר מקום לשם המוסד)
 my_column_config = {
-    "מוסד": st.column_config.TextColumn("שם מוסד", width="large"),
-    "סמל מוסד": st.column_config.TextColumn("סמל", width="medium"),
-    "רשות": st.column_config.TextColumn("רשות", width="medium")
+    "סמל מוסד": st.column_config.TextColumn("סמל מוסד", width="small"),
+    "מוסד": st.column_config.TextColumn("שם בי\"ס", width="large"),
+    "ממוצע משימות": st.column_config.NumberColumn("ממוצע משימות", width="small")
 }
 
 # --- רובריקה 1: מאקרו מחוז ---
@@ -224,11 +224,11 @@ if supervisor:
     with t1:
         d_m = df_lat_sup[df_lat_sup['תחום'] == 'מתמטיקה'][['סמל מוסד', 'מוסד', 'ממוצע משימות']].sort_values('ממוצע משימות', ascending=False)
         if not d_m.empty: 
-            st.dataframe(d_m.style.apply(style_row, domain='מתמטיקה', axis=1), use_container_width=False, height=400, hide_index=True, column_config=my_column_config)
+            st.dataframe(d_m.style.apply(style_row, domain='מתמטיקה', axis=1), use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
     with t2:
         d_s = df_lat_sup[df_lat_sup['תחום'] == 'מדעים'][['סמל מוסד', 'מוסד', 'ממוצע משימות']].sort_values('ממוצע משימות', ascending=False)
         if not d_s.empty: 
-            st.dataframe(d_s.style.apply(style_row, domain='מדעים', axis=1), use_container_width=False, height=400, hide_index=True, column_config=my_column_config)
+            st.dataframe(d_s.style.apply(style_row, domain='מדעים', axis=1), use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
 
     st.divider()
 
@@ -244,13 +244,15 @@ if supervisor:
         with col_no1:
             with st.expander(f"מתמטיקה: לחץ לצפייה ב-{len(math_no_course)} מוסדות"):
                 if not math_no_course.empty:
-                    st.dataframe(math_no_course[['מוסד', 'רשות']], use_container_width=False, height=400, hide_index=True, column_config=my_column_config)
+                    # מציג אך ורק סמל ושם מוסד, מותאם אוטומטית למסך
+                    st.dataframe(math_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
         with col_no2:
             with st.expander(f"מדעים: לחץ לצפייה ב-{len(sci_no_course)} מוסדות"):
                 if not sci_no_course.empty:
-                    st.dataframe(sci_no_course[['מוסד', 'רשות']], use_container_width=False, height=400, hide_index=True, column_config=my_column_config)
+                    # מציג אך ורק סמל ושם מוסד, מותאם אוטומטית למסך
+                    st.dataframe(sci_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
     else:
