@@ -178,11 +178,11 @@ if not district:
 df_lat_dist = df_latest[df_latest['מחוז תקשוב'] == district]
 df_urg_dist = df_urgent[df_urgent['מחוז תקשוב'] == district] if not df_urgent.empty else pd.DataFrame()
 
-# הסרנו לחלוטין את הגדרות הרוחב הבעייתיות! שינינו רק את כותרות העמודות.
+# הפקודה שהופכת את הסמל מוסד והממוצע לצרים ככל האפשר ומשאירה מקום מלא לשם המוסד
 my_column_config = {
-    "סמל מוסד": st.column_config.TextColumn("סמל מוסד"),
+    "סמל מוסד": st.column_config.TextColumn("סמל מוסד", width="small"),
     "מוסד": st.column_config.TextColumn("שם בי\"ס"),
-    "ממוצע משימות": st.column_config.NumberColumn("ממוצע משימות")
+    "ממוצע משימות": st.column_config.NumberColumn("ממוצע משימות", width="small")
 }
 
 # --- רובריקה 1: מאקרו מחוז ---
@@ -239,14 +239,12 @@ if supervisor:
         with col_no1:
             with st.expander(f"מתמטיקה: לחץ לצפייה ב-{len(math_no_course)} מוסדות"):
                 if not math_no_course.empty:
-                    # שימוש בטבלה רזה ואוטומטית לחלוטין
                     st.dataframe(math_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
         with col_no2:
             with st.expander(f"מדעים: לחץ לצפייה ב-{len(sci_no_course)} מוסדות"):
                 if not sci_no_course.empty:
-                    # שימוש בטבלה רזה ואוטומטית לחלוטין
                     st.dataframe(sci_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
