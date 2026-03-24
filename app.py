@@ -230,13 +230,13 @@ if supervisor:
         with col_no1:
             with st.expander(f"מתמטיקה: לחץ לצפייה ב-{len(math_no_course)} מוסדות"):
                 if not math_no_course.empty:
-                    st.dataframe(math_no_course[['מוסד', 'רשות']], hide_index=True, use_container_width=True)
+                    st.dataframe(math_no_course[['מוסד', 'רשות']], hide_index=True, use_container_width=False , hide_index=400)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
         with col_no2:
             with st.expander(f"מדעים: לחץ לצפייה ב-{len(sci_no_course)} מוסדות"):
                 if not sci_no_course.empty:
-                    st.dataframe(sci_no_course[['מוסד', 'רשות']], hide_index=True, use_container_width=True)
+                    st.dataframe(sci_no_course[['מוסד', 'רשות']], hide_index=True, use_container_width=False , hide_index=400)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
     else:
