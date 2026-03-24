@@ -1,4 +1,5 @@
-import streamlit as st
+
+   import streamlit as st
 import pandas as pd
 import os
 import base64
@@ -29,7 +30,6 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* וידוא שפס הגלילה יעבוד כמו שצריך בטבלאות רחבות */
     .stDataFrame {
         direction: ltr; 
     }
@@ -59,7 +59,6 @@ def get_image_base64(image_path):
 def load_and_process_data():
     all_files = os.listdir('.')
     
-    # 1. משיכת החרגות
     exc_file = next((f for f in all_files if 'להחרגה' in f), None)
     excluded_ids = []
     if exc_file:
@@ -69,7 +68,6 @@ def load_and_process_data():
                 extracted = df_ex[col].astype(str).str.extract(r'(\d{6})')[0].dropna().tolist()
                 if extracted: excluded_ids.extend(extracted)
 
-    # 2. עיבוד קבצי המודל 
     model_frames = []
     for f in sorted([f for f in all_files if 'מודל' in f]):
         domain = 'מתמטיקה' if 'מתמטיקה' in f else ('מדעים' if 'מדעים' in f else 'כללי')
@@ -102,7 +100,6 @@ def load_and_process_data():
     if not df_latest.empty:
         df_latest = df_latest.sort_values('filename').drop_duplicates(subset=['סמל מוסד', 'תחום'], keep='last')
 
-    # 3. עיבוד קבצי התפעולי (סינון מתחת ל-50%)
     op_frames = []
     for f in sorted([f for f in all_files if 'תפעולי' in f]):
         domain = 'מתמטיקה' if 'מתמטיקה' in f else ('מדעים' if 'מדעים' in f else 'כללי')
@@ -112,13 +109,11 @@ def load_and_process_data():
         col_auth = next((c for c in df_op.columns if 'רשות' in c), None)
         col_dist = next((c for c in df_op.columns if 'מחוז' in c), None)
         col_sup = next((c for c in df_op.columns if 'מפקח' in c), None)
-        
         col_pot = next((c for c in df_op.columns if 'פוטנציאל' in c), None)
         col_perf = next((c for c in df_op.columns if 'שביצעו' in c and 'אחוז' not in c), None)
         
         if not col_pot or not col_perf: continue
         
-        # זיהוי חכם של עמודות המוסד (תמיכה בקבצים החדשים המופרדים)
         if 'סמל מוסד' in df_op.columns and 'שם מוסד' in df_op.columns:
             df_op['סמל מוסד_נקי'] = df_op['סמל מוסד'].astype(str)
             df_op['מוסד_נקי'] = df_op['שם מוסד'].astype(str)
@@ -184,11 +179,11 @@ if not district:
 df_lat_dist = df_latest[df_latest['מחוז תקשוב'] == district]
 df_urg_dist = df_urgent[df_urgent['מחוז תקשוב'] == district] if not df_urgent.empty else pd.DataFrame()
 
-# הגדרות רוחב חכמות לעמודות
+# הסרנו לחלוטין את הגדרות הרוחב הבעייתיות! שינינו רק את כותרות העמודות.
 my_column_config = {
-    "סמל מוסד": st.column_config.TextColumn("סמל מוסד", width="small"),
-    "מוסד": st.column_config.TextColumn("שם בי\"ס", width="large"),
-    "ממוצע משימות": st.column_config.NumberColumn("ממוצע משימות", width="small")
+    "סמל מוסד": st.column_config.TextColumn("סמל מוסד"),
+    "מוסד": st.column_config.TextColumn("שם בי\"ס"),
+    "ממוצע משימות": st.column_config.NumberColumn("ממוצע משימות")
 }
 
 # --- רובריקה 1: מאקרו מחוז ---
@@ -245,12 +240,14 @@ if supervisor:
         with col_no1:
             with st.expander(f"מתמטיקה: לחץ לצפייה ב-{len(math_no_course)} מוסדות"):
                 if not math_no_course.empty:
+                    # שימוש בטבלה רזה ואוטומטית לחלוטין
                     st.dataframe(math_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
         with col_no2:
             with st.expander(f"מדעים: לחץ לצפייה ב-{len(sci_no_course)} מוסדות"):
                 if not sci_no_course.empty:
+                    # שימוש בטבלה רזה ואוטומטית לחלוטין
                     st.dataframe(sci_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
