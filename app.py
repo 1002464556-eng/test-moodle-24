@@ -69,7 +69,7 @@ def load_and_process_data():
                 extracted = df_ex[col].astype(str).str.extract(r'(\d{6})')[0].dropna().tolist()
                 if extracted: excluded_ids.extend(extracted)
 
-    # 2. עיבוד קבצי המודל (לוקח רק את הקבצים האחרונים לטובת הרמזור)
+    # 2. עיבוד קבצי המודל 
     model_frames = []
     for f in sorted([f for f in all_files if 'מודל' in f]):
         domain = 'מתמטיקה' if 'מתמטיקה' in f else ('מדעים' if 'מדעים' in f else 'כללי')
@@ -100,7 +100,6 @@ def load_and_process_data():
             
     df_latest = pd.concat(model_frames, ignore_index=True) if model_frames else pd.DataFrame()
     if not df_latest.empty:
-        # שומר רק את הנתון מהקובץ הכי מעודכן לכל בית ספר ותחום
         df_latest = df_latest.sort_values('filename').drop_duplicates(subset=['סמל מוסד', 'תחום'], keep='last')
 
     # 3. עיבוד קבצי התפעולי (סינון מתחת ל-50%)
@@ -110,26 +109,32 @@ def load_and_process_data():
         df_op = safe_read_file(f)
         if df_op.empty: continue
         
-        col_school = next((c for c in df_op.columns if 'מוסד' in c), None)
         col_auth = next((c for c in df_op.columns if 'רשות' in c), None)
         col_dist = next((c for c in df_op.columns if 'מחוז' in c), None)
         col_sup = next((c for c in df_op.columns if 'מפקח' in c), None)
         
-        # זיהוי עמודות פוטנציאל וביצוע לצורך חישוב מדויק
         col_pot = next((c for c in df_op.columns if 'פוטנציאל' in c), None)
         col_perf = next((c for c in df_op.columns if 'שביצעו' in c and 'אחוז' not in c), None)
         
-        if not col_school or not col_pot or not col_perf: continue
+        if not col_pot or not col_perf: continue
         
-        df_op['סמל מוסד'] = df_op[col_school].astype(str).str.extract(r'(\d{6})')[0]
+        # זיהוי חכם של עמודות המוסד (תמיכה בקבצים החדשים המופרדים)
+        if 'סמל מוסד' in df_op.columns and 'שם מוסד' in df_op.columns:
+            df_op['סמל מוסד_נקי'] = df_op['סמל מוסד'].astype(str)
+            df_op['מוסד_נקי'] = df_op['שם מוסד'].astype(str)
+        else:
+            col_school = next((c for c in df_op.columns if 'מוסד' in c), None)
+            if not col_school: continue
+            df_op['סמל מוסד_נקי'] = df_op[col_school].astype(str).str.extract(r'(\d{6})')[0]
+            df_op['מוסד_נקי'] = df_op[col_school].astype(str).str.replace(r'^\d{6}\s*-\s*', '', regex=True)
+
+        df_op['סמל מוסד'] = df_op['סמל מוסד_נקי']
         df_op = df_op.dropna(subset=['סמל מוסד'])
         df_op = df_op[~df_op['סמל מוסד'].isin(excluded_ids)]
         
-        df_op['מוסד_נקי'] = df_op[col_school].astype(str).str.replace(r'^\d{6}\s*-\s*', '', regex=True)
         df_op['pot_num'] = pd.to_numeric(df_op[col_pot], errors='coerce').fillna(0)
         df_op['perf_num'] = pd.to_numeric(df_op[col_perf], errors='coerce').fillna(0)
         
-        # חיבור כל הכיתות ברמת בית הספר
         grouped = df_op.groupby('סמל מוסד').agg({
             'מוסד_נקי': 'first',
             col_auth: 'first',
@@ -139,10 +144,8 @@ def load_and_process_data():
             'perf_num': 'sum'
         }).reset_index()
         
-        # חישוב אחוז ביצוע כולל לבית הספר
         grouped['אחוז_ביצוע'] = grouped.apply(lambda x: (x['perf_num'] / x['pot_num'] * 100) if x['pot_num'] > 0 else 100, axis=1)
         
-        # סינון: רק מוסדות מתחת ל-50%
         urgent = grouped[grouped['אחוז_ביצוע'] < 50].copy()
         if not urgent.empty:
             urgent['תחום'] = domain
@@ -160,12 +163,10 @@ df_latest, df_urgent = load_and_process_data()
 
 # ==================== בניית ממשק המשתמש ====================
 
-# הטמעת הלוגו של משרד החינוך (אם התמונה קיימת בתיקייה)
 logo_base64 = get_image_base64('image_5e4888.png')
 if logo_base64:
     st.markdown(f'<img src="data:image/png;base64,{logo_base64}" style="max-height: 80px; float: right; margin-left: 20px;">', unsafe_allow_html=True)
 
-# כותרת ראשית 
 st.title("ישראל ראלית משימות מודל לכיתה ז")
 st.divider()
 
@@ -183,7 +184,7 @@ if not district:
 df_lat_dist = df_latest[df_latest['מחוז תקשוב'] == district]
 df_urg_dist = df_urgent[df_urgent['מחוז תקשוב'] == district] if not df_urgent.empty else pd.DataFrame()
 
-# הגדרות רוחב חכמות לעמודות (נותן יותר מקום לשם המוסד)
+# הגדרות רוחב חכמות לעמודות
 my_column_config = {
     "סמל מוסד": st.column_config.TextColumn("סמל מוסד", width="small"),
     "מוסד": st.column_config.TextColumn("שם בי\"ס", width="large"),
@@ -244,14 +245,12 @@ if supervisor:
         with col_no1:
             with st.expander(f"מתמטיקה: לחץ לצפייה ב-{len(math_no_course)} מוסדות"):
                 if not math_no_course.empty:
-                    # מציג אך ורק סמל ושם מוסד, מותאם אוטומטית למסך
                     st.dataframe(math_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
         with col_no2:
             with st.expander(f"מדעים: לחץ לצפייה ב-{len(sci_no_course)} מוסדות"):
                 if not sci_no_course.empty:
-                    # מציג אך ורק סמל ושם מוסד, מותאם אוטומטית למסך
                     st.dataframe(sci_no_course[['סמל מוסד', 'מוסד']], use_container_width=True, height=400, hide_index=True, column_config=my_column_config)
                 else:
                     st.success("אין מוסדות הדורשים התערבות.")
